@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import BuyerDashboard from './components/BuyerDashboard';
 import FarmerDashboard from './components/FarmerDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -14,8 +15,8 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
-          <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
+          <Route path="/buyer-dashboard" element={<ProtectedRoute role="BUYER"><BuyerDashboard /></ProtectedRoute>} />
+          <Route path="/farmer-dashboard" element={<ProtectedRoute role="FARMER"><FarmerDashboard /></ProtectedRoute>} />
         </Routes>
       </div>
     </Router>

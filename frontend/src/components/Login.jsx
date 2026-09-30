@@ -4,21 +4,47 @@ import { useNavigate, Link } from 'react-router-dom';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Placeholder for Django backend authentication
-        console.log('Login submitted:', { email, password });
-        
-        // For demonstration, let's navigate to the buyer dashboard
-        // In a real app, this would depend on the user's role returned by the backend
-        navigate('/buyer-dashboard');
+        setError('');
+        setIsSubmitting(true);
+
+        try {
+            const response = await fetch('http://localhost:8000/api/user/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                setError(data.detail || data.email?.[0] || 'Login failed. Check your email and password.');
+                return;
+            }
+
+            if (!data.tokens?.access || !data.tokens?.refresh || !data.user?.role) {
+                setError('The server returned an incomplete login response.');
+                return;
+            }
+
+            localStorage.setItem('accessToken', data.tokens.access);
+            localStorage.setItem('refreshToken', data.tokens.refresh);
+            navigate(data.user.role === 'FARMER' ? '/farmer-dashboard' : '/buyer-dashboard');
+        } catch {
+            setError('Unable to reach the server. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <div className="login-container">
             <h2>Login</h2>
+            {error && <div className="error-message" role="alert" style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Email:</label>
@@ -38,7 +64,7 @@ const Login = () => {
                         required
                     />
                 </div>
-                <button type="submit">Login</button>
+                <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Logging in...' : 'Login'}</button>
             </form>
             <p>Don't have an account? <Link to="/register">Register here</Link></p>
         </div>
