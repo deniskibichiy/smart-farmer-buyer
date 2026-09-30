@@ -591,7 +591,7 @@ before committing to ensure that credentials, local database files, generated fi
 
 ---
 
-## New Collaborator Setup
+## Collaborator Setup
 
 ### Prerequisites
 
