@@ -21,25 +21,40 @@ const Register = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Confirm password using javascript
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match!");
             return;
         }
 
-        setError(''); // clear error if any
+        try {
+            const response = await fetch('http://localhost:8000/api/user/register/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
 
-        // Placeholder for sending data to Django backend
-        console.log('Registration data:', formData);
+            const data = await response.json();
 
-        // Redirect based on role selection for success message
-        if (formData.role === 'farmer') {
-            navigate('/farmer-dashboard');
-        } else {
-            navigate('/buyer-dashboard');
+            if (!response.ok) {
+                const messages = Object.values(data).flat().filter((value) => typeof value === 'string');
+                setError(messages[0] || 'Registration failed.');
+                return;
+            }
+
+            // Store tokens
+            localStorage.setItem('accessToken', data.tokens.access);
+            localStorage.setItem('refreshToken', data.tokens.refresh);
+
+            // Redirect based on returned user role
+            if (data.user.role === 'FARMER') {
+                navigate('/farmer-dashboard');
+            } else {
+                navigate('/buyer-dashboard');
+            }
+        } catch {
+            setError('Network error. Please try again.');
         }
     };
 
