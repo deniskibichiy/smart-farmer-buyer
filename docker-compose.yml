@@ -1,0 +1,62 @@
+services: # Acts as the root container. It tells Docker that a container(s) is about to be defined.
+  db: # Internal name of the service. Other containers in the same network can use this name to talk to the database.
+    image: postgres:16-alpine # Pulls the official postgreSQL version 16 image Alpine: built on a minimal linux distribution.
+    container_name: smart_farmer_db # Container name defined instead of letting Docker randomly generate one.
+    restart: unless-stopped # If db crashes, or host server reboots, Docker will automatically restart this container with the exception of the cmd 'docker compose stop'
+    environment: # Passes config settings straight into the db container upon startup.
+      POSTGRES_DB: ${POSTGRES_DB:-smart_farmer_db} # Name of the default db. Uses ${VARIABLE:-default}
+      POSTGRES_USER: ${POSTGRES_USER:-smart_farmer_user} # Username
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smart_farmer_password} # Password
+    ports:
+      - "5432:5432" # Format is HOST:CONTAINER. Takes port from container and maps it to the one on your computer. Allows connecting db to external softwares (workbench)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # links isolated storage folder inside container to a persistent volume 'postgresql_data' on your machine. Data remains safe.
+    healthcheck: # Monitors whether db is actually running and healthy, not just if it is turned on.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smart_farmer_user} -d ${POSTGRES_DB:-smart_farmer_db}"] # Every interval, Docker fires up cmd to check for the health status.
+      interval: 5s # Docker runs this check every 5 seconds.
+      timeout: 5s # If the check takes longer than 5 seconds to reply, Docker marks that specific attempt as a failure.
+      retries: 5 # If the check fails 5 times consecutively, Docker updates the container status to "unhealthy".
+
+  backend: # Internal name of the service.
+    build: # Tells Docker Compose it need to compile a custom Docker image from ./backend.
+      context: ./backend # Context, needs to look inside folder.
+      dockerfile: Dockerfile # Source file
+    container_name: smart_farmer_backend # Name of the container
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # HOST:CONTAINER
+    volumes: 
+          # For live hot-reloading. Changes will be instantly reflected
+      - ./backend:/app # Creates a live bridge between the backend folder in your computer and the app dir in the container.
+    environment:
+      - DEBUG=${DEBUG:-True} # For local debugging.
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-smart_farmer_db}
+      - POSTGRES_USER=${POSTGRES_USER:-smart_farmer_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-smart_farmer_password}
+    depends_on: # Startup dependency chains
+      db:
+        condition: service_healthy # Waits for db health status hoping for healthy before it spins up.
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart_farmer_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Prevents host machine from wiping container node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes: 
+  postgres_data:
+    driver: local # Global storage space will use Docker's built-in local engine to manage the storage allocation on your computer's hard drive automatically.
+

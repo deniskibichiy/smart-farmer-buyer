@@ -1,0 +1,7 @@
+# Docker & Local Database Data 
+# I am ensuring local Docker temp dirs and db persistent data mounts are ignored by Git
+.postgres_data/
+*.log
+.env
+.env.*
+!.env.example

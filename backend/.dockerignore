@@ -1,0 +1,14 @@
+# Excludes unnecessary files from being copied into the Django Docker image.
+# Keeps build context small and prevents local virtual environments or secrets from being baked into the image.
+
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.git/
+.gitignore
+.env
+*.log
