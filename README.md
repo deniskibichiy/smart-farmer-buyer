@@ -1,4 +1,4 @@
-# smart-farmer-buyer
+# Smart-Farmer-Buyer
 Smart Farmer-to-Buyer Produce Matching System — BSc Computer Science Capstone
 
 The Smart Farmer-to-Buyer Management System is a software solution designed to connect farmers with potential buyers of agricultural produce.
